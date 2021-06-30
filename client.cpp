@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     if (sockfd < 0)
         std::cerr << "ERROR opening socket" << std::endl;
 
-    disable_nagle_alg(sockfd); 
+    disable_nagle_alg(sockfd);
 
     server = gethostbyname(argv[1]);
 
@@ -42,8 +42,8 @@ int main(int argc, char *argv[])
     printf("Enter the message to send the server: ");
     bzero(buffer, BUF_SIZE);
     //fgets(buffer, BUF_SIZE - 1, stdin);  // Do NOT use fgets or fputs as per assignment instructions
-    
-    std::cin >> buffer;  
+
+    std::cin >> buffer;
 
     n = write(sockfd, buffer, strlen(buffer));
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
  * disables Nagle's algorithm, although we really only need to worry about this on the sender (client end). 
  * It is done here for practice and convenience. 
  * if TCP_NODELAY is set (on), the algorithm is considered turned off.  
- */ 
+ */
 void disable_nagle_alg(int sockfd)
 {
     int isEnabled = 1;

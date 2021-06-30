@@ -9,10 +9,11 @@
  * If a detached thread can survive once main terminates normally, 
  * we should be able to see the string. Otherwise nothing will print. 
  * The latter is what we observe. 
- */  
-void some_thread() {
-  std::this_thread::sleep_for (std::chrono::seconds(2)); 
-  std::cout << "Do you see me?" << std::endl;   
+ */
+void some_thread()
+{
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  std::cout << "Do you see me?" << std::endl;
 }
 
 /**
@@ -21,8 +22,8 @@ void some_thread() {
  */
 int main()
 {
-    std::thread t1(some_thread);
-    t1.detach();
+  std::thread t1(some_thread);
+  t1.detach();
 
-    return 0; 
+  return 0;
 }

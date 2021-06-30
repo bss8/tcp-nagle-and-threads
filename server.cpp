@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     * some exit calls for testing below, disabled intentionally. 
     * If we call pthread_exit(), the other threads launched by main continue. 
     * If we call exit(), they terminate and do not continue. 
-    */ 
+    */
 
     // pthread_exit(NULL);
     // exit(0);
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
     for (;;)
     {
-        std::cout << ANSII_YELLOW_COUT << "Waiting for client connection...." << ANSII_END << std::endl; 
+        std::cout << ANSII_YELLOW_COUT << "Waiting for client connection...." << ANSII_END << std::endl;
         len = addrlen;
         iptr = (int *)malloc(sizeof(int));
         //*iptr = accept(listenfd, cliaddr, &len);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 /**
  * A function to execute in a spearate thread. 
  * 
- */ 
+ */
 void *thread_function_one(void *arg)
 {
     std::cout << "Thread Function One :: Start" << std::endl;
@@ -107,8 +107,8 @@ void *thread_function_one(void *arg)
 
     /* 
     * some calls after we detach the thread for testing, intentionally disabled. 
-    *
-    */ 
+    * If we call exit from here, the main thread will continue but this thread will terminate. 
+    */
 
     // pthread_exit(NULL);
     // exit(0);
@@ -123,7 +123,7 @@ void *thread_function_one(void *arg)
 /**
  * 
  * 
- */ 
+ */
 static void *doit(void *arg)
 {
 
@@ -137,7 +137,7 @@ static void *doit(void *arg)
     */
 
     // exit(0);
-    // pthread_exit(NULL); 
+    // pthread_exit(NULL);
 
     connfd = *((int *)arg);
     free(arg);
@@ -147,10 +147,10 @@ static void *doit(void *arg)
     /* 
     * some calls after we detach the thread for testing, intentionally disabled. 
     *
-    */ 
+    */
 
     // exit(0);
-    // pthread_exit(NULL); 
+    // pthread_exit(NULL);
 
     std::cout << "Chancelor Palpatine says: DO IT ANAKIN!" << std::endl;
     close(connfd); /* done with connected socket */
@@ -162,7 +162,7 @@ static void *doit(void *arg)
  * disables Nagle's algorithm, although we really only need to worry about this on the sender (client end). 
  * It is done here for practice and convenience. 
  * if TCP_NODELAY is set (on), the algorithm is considered turned off.  
- */ 
+ */
 void disable_nagle_alg(int sockfd)
 {
     int isEnabled = 1;
@@ -181,7 +181,7 @@ void disable_nagle_alg(int sockfd)
  * 
  * I could simply make the port dynamic (user chooses a new port each time) but this design is intentional to force this 
  * bind error for practice. 
- */ 
+ */
 void setup_tcp_serv(int sockfd, sockaddr_in serv_addr)
 {
     // clear address structure
@@ -256,27 +256,26 @@ void accept_and_process(int sockfd, socklen_t clilen, sockaddr_in cli_addr)
     std::cout << ANSII_GREEN_START << "Client msg: " << buffer << ANSII_END << std::endl;
 
     close(newsockfd);
-    
 }
 
 /**
  * Just a silly function to make things more fun
  * Prints some Star Wars related ASCII art
  * 
- */ 
+ */
 void look_sir_droids()
 {
-std::cout << "                                     /~\\                           " << std::endl; 
-std::cout << "                                    |oo )      We're doomed!       " << std::endl; 
-std::cout << "                                    _\\=/_                          " << std::endl; 
-std::cout << "                    ___        #   /  _  \\   #                     " << std::endl; 
-std::cout << "                   /() \\        \\\\//|/.\\|\\\\//                      " << std::endl; 
-std::cout << "                 _|_____|_       \\/  \\_/  \\/                       " << std::endl; 
-std::cout << "                | | === | |         |\\ /|                          " << std::endl; 
-std::cout << "                |_|  O  |_|         \\_ _/                          " << std::endl; 
-std::cout << "                 ||  O  ||          | | |                          " << std::endl; 
-std::cout << "                 ||__*__||          | | |                          " << std::endl; 
-std::cout << "                |~ \\___/ ~|         []|[]                          " << std::endl; 
-std::cout << "                /=\\ /=\\ /=\\         | | |                          " << std::endl; 
-std::cout << "________________[_]_[_]_[_]________/_]_[_\\_________________________" << std::endl;  
+    std::cout << "                                     /~\\                           " << std::endl;
+    std::cout << "                                    |oo )      We're doomed!       " << std::endl;
+    std::cout << "                                    _\\=/_                          " << std::endl;
+    std::cout << "                    ___        #   /  _  \\   #                     " << std::endl;
+    std::cout << "                   /() \\        \\\\//|/.\\|\\\\//                      " << std::endl;
+    std::cout << "                 _|_____|_       \\/  \\_/  \\/                       " << std::endl;
+    std::cout << "                | | === | |         |\\ /|                          " << std::endl;
+    std::cout << "                |_|  O  |_|         \\_ _/                          " << std::endl;
+    std::cout << "                 ||  O  ||          | | |                          " << std::endl;
+    std::cout << "                 ||__*__||          | | |                          " << std::endl;
+    std::cout << "                |~ \\___/ ~|         []|[]                          " << std::endl;
+    std::cout << "                /=\\ /=\\ /=\\         | | |                          " << std::endl;
+    std::cout << "________________[_]_[_]_[_]________/_]_[_\\_________________________" << std::endl;
 }

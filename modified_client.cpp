@@ -1,73 +1,71 @@
 #include "common_helper.hpp"
-#define	MAXLINE		4096
+#define MAXLINE 4096
 
-void	*copyto(void *);
+void *copyto(void *);
 
-typedef struct {
-  int		read_fd;		/* caller's descriptor to read from */
-  char		*read_ptr;		/* caller's buffer to read into */
-  size_t	read_maxlen;	/* max #bytes to read */
-				/* next three are used internally by the function */
-  int		rl_cnt;			/* initialize to 0 */
-  char		*rl_bufptr;		/* initialize to rl_buf */
-  char		rl_buf[MAXLINE];
+typedef struct
+{
+	int read_fd;		/* caller's descriptor to read from */
+	char *read_ptr;		/* caller's buffer to read into */
+	size_t read_maxlen; /* max #bytes to read */
+						/* next three are used internally by the function */
+	int rl_cnt;			/* initialize to 0 */
+	char *rl_bufptr;	/* initialize to rl_buf */
+	char rl_buf[MAXLINE];
 } Rline;
 
-void	readline_rinit(int, void *, size_t, Rline *);
-ssize_t	readline_r(Rline *);
+void readline_rinit(int, void *, size_t, Rline *);
+ssize_t readline_r(Rline *);
 
-static int	sockfd;		/* global for both threads to access */
-static FILE	*fp;
-static pthread_key_t	rl_key;
-static pthread_once_t	rl_once = PTHREAD_ONCE_INIT;
+static int sockfd; /* global for both threads to access */
+static FILE *fp;
+static pthread_key_t rl_key;
+static pthread_once_t rl_once = PTHREAD_ONCE_INIT;
 
+// I create a new pthread_key_t variable to hold the key for the additional thread specific data.
 static pthread_key_t boris_key;
 
-void	 Writen(int, void *, size_t);
-ssize_t	 writen(int, const void *, size_t);
+void Writen(int, void *, size_t);
+ssize_t writen(int, const void *, size_t);
 
 void str_cli(FILE *fp_arg, int sockfd_arg);
 int Tcp_connect(const char *host, const char *serv);
-void * copyto(void *arg);
+void *copyto(void *arg);
 
 static void readline_destructor(void *ptr);
 static void readline_once(void);
-static ssize_t my_read(Rline *tsd, int fd, char *ptr); 
-ssize_t readline(int fd, void *vptr, size_t maxlen); 
-ssize_t Readline(int fd, void *ptr, size_t maxlen); 
-void * Calloc(size_t n, size_t size); 
-
+static ssize_t my_read(Rline *tsd, int fd, char *ptr);
+ssize_t readline(int fd, void *vptr, size_t maxlen);
+ssize_t Readline(int fd, void *ptr, size_t maxlen);
+void *Calloc(size_t n, size_t size);
 
 int main(int argc, char **argv)
 {
-	int		sockfd;
+	int sockfd;
 
 	if (argc != 3)
 	{
 		std::cerr << ANSII_RED_START << "usage: tcpcli <hostname> <service>" << ANSII_END << std::endl;
-		return EXIT_FAILURE; 
-	}	
-		
+		return EXIT_FAILURE;
+	}
 
 	sockfd = Tcp_connect(argv[1], argv[2]);
 
-	str_cli(stdin, sockfd);		/* do it all */
+	str_cli(stdin, sockfd); /* do it all */
 
 	exit(0);
 }
 
-
-int
-tcp_connect(const char *host, const char *serv)
+int tcp_connect(const char *host, const char *serv)
 {
-	int				sockfd, n;
-	struct addrinfo	hints, *res, *ressave;
+	int sockfd, n;
+	struct addrinfo hints, *res, *ressave;
 
 	bzero(&hints, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if ( (n = getaddrinfo(host, serv, &hints, &res)) != 0)
+	if ((n = getaddrinfo(host, serv, &hints, &res)) != 0)
 	{
 		printf("tcp_connect error for %s, %s: %s", host, serv, gai_strerror(n));
 		exit(1);
@@ -75,18 +73,19 @@ tcp_connect(const char *host, const char *serv)
 
 	ressave = res;
 
-	do {
+	do
+	{
 		sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		if (sockfd < 0)
-			continue;	/* ignore this one */
+			continue; /* ignore this one */
 
 		if (connect(sockfd, res->ai_addr, res->ai_addrlen) == 0)
-			break;		/* success */
+			break; /* success */
 
-		close(sockfd);	/* ignore this one */
-	} while ( (res = res->ai_next) != NULL);
+		close(sockfd); /* ignore this one */
+	} while ((res = res->ai_next) != NULL);
 
-	if (res == NULL)	/* errno set from final connect() */
+	if (res == NULL) /* errno set from final connect() */
 	{
 		printf("tcp_connect error for %s, %s", host, serv);
 		exit(1);
@@ -94,7 +93,7 @@ tcp_connect(const char *host, const char *serv)
 
 	freeaddrinfo(ressave);
 
-	return(sockfd);
+	return (sockfd);
 }
 /* end tcp_connect */
 
@@ -106,15 +105,15 @@ tcp_connect(const char *host, const char *serv)
 
 int Tcp_connect(const char *host, const char *serv)
 {
-	return(tcp_connect(host, serv));
+	return (tcp_connect(host, serv));
 }
 
 void str_cli(FILE *fp_arg, int sockfd_arg)
 {
-	char		recvline[MAXLINE];
-	pthread_t	tid;
+	char recvline[MAXLINE];
+	pthread_t tid;
 
-	sockfd = sockfd_arg;	/* copy arguments to externals */
+	sockfd = sockfd_arg; /* copy arguments to externals */
 	fp = fp_arg;
 
 	pthread_create(&tid, NULL, copyto, NULL);
@@ -123,40 +122,42 @@ void str_cli(FILE *fp_arg, int sockfd_arg)
 		fputs(recvline, stdout);
 }
 
-void * copyto(void *arg)
+void *copyto(void *arg)
 {
-	char	sendline[MAXLINE];
+	char sendline[MAXLINE];
 
 	while (fgets(sendline, MAXLINE, fp) != NULL)
 		Writen(sockfd, sendline, strlen(sendline));
 
-	shutdown(sockfd, SHUT_WR);	/* EOF on stdin, send FIN */
+	shutdown(sockfd, SHUT_WR); /* EOF on stdin, send FIN */
 
-	return(NULL);
-		/* 4return (i.e., thread terminates) when EOF on stdin */
+	return (NULL);
+	/* 4return (i.e., thread terminates) when EOF on stdin */
 }
 
-ssize_t						/* Write "n" bytes to a descriptor. */
+ssize_t /* Write "n" bytes to a descriptor. */
 writen(int fd, const void *vptr, size_t n)
 {
-	size_t		nleft;
-	ssize_t		nwritten;
-	const char	*ptr;
+	size_t nleft;
+	ssize_t nwritten;
+	const char *ptr;
 
-	ptr = (const char *) vptr;
+	ptr = (const char *)vptr;
 	nleft = n;
-	while (nleft > 0) {
-		if ( (nwritten = write(fd, ptr, nleft)) <= 0) {
+	while (nleft > 0)
+	{
+		if ((nwritten = write(fd, ptr, nleft)) <= 0)
+		{
 			if (nwritten < 0 && errno == EINTR)
-				nwritten = 0;		/* and call write() again */
+				nwritten = 0; /* and call write() again */
 			else
-				return(-1);			/* error */
+				return (-1); /* error */
 		}
 
 		nleft -= nwritten;
-		ptr   += nwritten;
+		ptr += nwritten;
 	}
-	return(n);
+	return (n);
 }
 /* end writen */
 
@@ -164,7 +165,7 @@ void Writen(int fd, void *ptr, size_t nbytes)
 {
 	if (writen(fd, ptr, nbytes) != nbytes)
 	{
-        std::cerr << "Writen error" << std::endl; 
+		std::cerr << "Writen error" << std::endl;
 		exit(1);
 	}
 }
@@ -176,11 +177,14 @@ static void readline_destructor(void *ptr)
 
 static void readline_once(void)
 {
-	std::cout << "rl_key before pthread_key_create call: " << &rl_key << std::endl; 
-	pthread_key_create(&rl_key, readline_destructor); 
-	std::cout << "rl_key after pthread_key_create call: " << &rl_key << std::endl; 
+	std::cout << "rl_key before pthread_key_create call: " << &rl_key << std::endl;
+	pthread_key_create(&rl_key, readline_destructor);
+	std::cout << "rl_key after pthread_key_create call: " << &rl_key << std::endl;
 
-    pthread_key_create(&boris_key, readline_destructor);
+	// Additional thread specific data with a custom separate key
+	// the boris_key is the key and the data will be some simple string.
+	// I am testing simply if it can be created and accessed.
+	pthread_key_create(&boris_key, readline_destructor);
 }
 
 // typedef struct {
@@ -193,82 +197,99 @@ static void readline_once(void)
 /* include readline2 */
 static ssize_t my_read(Rline *tsd, int fd, char *ptr)
 {
-	if (tsd->rl_cnt <= 0) {
-again:
-		if ( (tsd->rl_cnt = read(fd, tsd->rl_buf, MAXLINE)) < 0) {
+	if (tsd->rl_cnt <= 0)
+	{
+	again:
+		if ((tsd->rl_cnt = read(fd, tsd->rl_buf, MAXLINE)) < 0)
+		{
 			if (errno == EINTR)
 				goto again;
-			return(-1);
-		} else if (tsd->rl_cnt == 0)
-			return(0);
+			return (-1);
+		}
+		else if (tsd->rl_cnt == 0)
+			return (0);
 		tsd->rl_bufptr = tsd->rl_buf;
 	}
 
 	tsd->rl_cnt--;
 	*ptr = *tsd->rl_bufptr++;
-	return(1);
+	return (1);
 }
 
 ssize_t readline(int fd, void *vptr, size_t maxlen)
 {
-	size_t		n, rc;
-	char	c, *ptr;
-	Rline	*tsd;
+	size_t n, rc;
+	char c, *ptr;
+	Rline *tsd;
 
 	pthread_once(&rl_once, readline_once);
-	if ( (tsd = (Rline *) pthread_getspecific(rl_key)) == NULL) {
-		tsd = (Rline *) Calloc(1, sizeof(Rline));		/* init to 0 */
+	if ((tsd = (Rline *)pthread_getspecific(rl_key)) == NULL)
+	{
+		tsd = (Rline *)Calloc(1, sizeof(Rline)); /* init to 0 */
 
-		std::cout << "rl_key before pthread_setspecific call: " << &rl_key << std::endl; 
+		std::cout << "rl_key before pthread_setspecific call: " << &rl_key << std::endl;
 		pthread_setspecific(rl_key, tsd);
-		std::cout << "rl_key after pthread_setspecific call: " << &rl_key << std::endl; 
+		std::cout << "rl_key after pthread_setspecific call: " << &rl_key << std::endl;
 
+		// I am using some simple string to test adding additional thread specific data.
+		// I just generate another unique key (which gets created only once with pthread_once
+		// but can be used by multiple threads to store thread specific data)
+		std::string thread_specific_string = "Just some data";
 
-        std::string thread_specific_string = "Just some data";
-        pthread_setspecific(boris_key, &thread_specific_string);
+		// we set the data associated with this key to be the string above
+		pthread_setspecific(boris_key, &thread_specific_string);
 
-        const void *p = pthread_getspecific(boris_key);
-        std::cout << "value of boris_key thread specific data that we set: " << *(const std::string *) p << std::endl; 
+		// Here I test accessing the data we just created by using the key, which we
+		// pass to the pthread_getspecific function. It returns to us a pointer to where the data is
+		// stored in memory. When we print it out, we must cast it to the right value but we recall it is a
+		// pointer so we must also dereference it.
+		const void *p = pthread_getspecific(boris_key);
+		std::cout << "value of boris_key thread specific data that we set: " << *(const std::string *)p << std::endl;
 	}
 
-	ptr = (char *) vptr;
-	for (n = 1; n < maxlen; n++) {
-		if ( (rc = my_read(tsd, fd, &c)) == 1) {
+	ptr = (char *)vptr;
+	for (n = 1; n < maxlen; n++)
+	{
+		if ((rc = my_read(tsd, fd, &c)) == 1)
+		{
 			*ptr++ = c;
 			if (c == '\n')
 				break;
-		} else if (rc == 0) {
+		}
+		else if (rc == 0)
+		{
 			*ptr = 0;
-			return(n - 1);		/* EOF, n - 1 bytes read */
-		} else
-			return(-1);		/* error, errno set by read() */
+			return (n - 1); /* EOF, n - 1 bytes read */
+		}
+		else
+			return (-1); /* error, errno set by read() */
 	}
 
 	*ptr = 0;
-	return(n);
+	return (n);
 }
 /* end readline2 */
 
 ssize_t Readline(int fd, void *ptr, size_t maxlen)
 {
-	ssize_t		n;
+	ssize_t n;
 
-	if ( (n = readline(fd, ptr, maxlen)) < 0)
+	if ((n = readline(fd, ptr, maxlen)) < 0)
 	{
-        std::cerr << "readline error" << std::endl; 
+		std::cerr << "readline error" << std::endl;
 		exit(1);
 	}
-	return(n);
+	return (n);
 }
 
-void * Calloc(size_t n, size_t size)
+void *Calloc(size_t n, size_t size)
 {
-	void	*ptr;
+	void *ptr;
 
-	if ( (ptr = calloc(n, size)) == NULL)
+	if ((ptr = calloc(n, size)) == NULL)
 	{
-        std::cerr << "Calloc error" << std::endl; 
+		std::cerr << "Calloc error" << std::endl;
 		exit(1);
 	}
-	return(ptr);
+	return (ptr);
 }

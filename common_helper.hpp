@@ -29,6 +29,3 @@ std::string ANSII_BLUE_COUT = "\033[0;30;46m";
 std::string ANSII_RED_COUT = "\033[41;1m";
 std::string ANSII_GREEN_COUT = "\033[0;30;42m";
 std::string ANSII_YELLOW_COUT = "\033[30;48;5;3m";
-
-
-
