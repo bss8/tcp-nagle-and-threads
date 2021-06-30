@@ -1,5 +1,7 @@
 #include "common_helper.hpp"
 
+void disable_nagle_alg(int sockfd);
+
 int main(int argc, char *argv[])
 {
     int sockfd, n;
@@ -19,6 +21,8 @@ int main(int argc, char *argv[])
     if (sockfd < 0)
         std::cerr << "ERROR opening socket" << std::endl;
 
+    disable_nagle_alg(sockfd); 
+
     server = gethostbyname(argv[1]);
 
     if (server == NULL)
@@ -26,14 +30,6 @@ int main(int argc, char *argv[])
         std::cerr << stderr << "  ERROR, no such host" << std::endl;
         return EXIT_FAILURE;
     }
-
-    // DISABLE NAGLE ALG
-    int isEnabled = 1;
-    int set_res = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *)&isEnabled, sizeof(isEnabled));
-    if (set_res < 0)
-        std::cerr << "Error disabling Nagle's algorithm via setting socket option for TCP_NODELAY!"
-                  << strerror(errno) << std::endl;
-    // END DISABLE NAGLE ALG
 
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -65,4 +61,18 @@ int main(int argc, char *argv[])
     close(sockfd);
 
     return EXIT_SUCCESS;
+}
+
+/**
+ * disables Nagle's algorithm, although we really only need to worry about this on the sender (client end). 
+ * It is done here for practice and convenience. 
+ * if TCP_NODELAY is set (on), the algorithm is considered turned off.  
+ */ 
+void disable_nagle_alg(int sockfd)
+{
+    int isEnabled = 1;
+    int set_res = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *)&isEnabled, sizeof(isEnabled));
+    if (set_res < 0)
+        std::cerr << "Error disabling Nagle's algorithm via setting socket option for TCP_NODELAY!"
+                  << strerror(errno) << std::endl;
 }

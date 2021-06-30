@@ -20,7 +20,7 @@ VPATH = $(SOURCEDIR)
 # #  Regarding why I use C++11, please refer to README.md
 CXXFLAGS  = -g -std=c++11 #-I$(INCLDIR)
 
-all: client server thread_client modified_client
+all: client server thread_client modified_client thread_test
 
 client: client.cpp
 	$(CXX) -o client client.cpp $(CXXFLAGS) 
@@ -33,3 +33,6 @@ thread_client: readline_client.cpp
 
 modified_client: modified_client.cpp
 	$(CXX) -pthread -o mclient modified_client.cpp $(CXXFLAGS)
+
+thread_test: thread_test.cpp
+	$(CXX) -pthread -o thread thread_test.cpp $(CXXFLAGS)

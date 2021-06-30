@@ -11,6 +11,7 @@ To build manually, execute these commands:
 2. `g++ -pthread -o server server.cpp -g -std=c++11`      
 3. `g++ -pthread -o tclient readline_client.cpp -g -std=c++11`    
 4. `g++ -pthread -o mclient modified_client.cpp -g -std=c++11`     
+5. `g++ -pthread -o thread thread_test.cpp -g -std=c++11`     
 
 ## Run the code
 
@@ -20,9 +21,14 @@ First run the server, then run one of the 3 clients as needed.
 
 `./client` or `./tclient` or `./mclient`
 
-- client executable is for problem #1 and #2 and basic testing.
-- tclient is for readline_client.cpp, essentially for problem #3 part 1
-- mclient is for modified_client.cpp, a modified version of readline_client.cpp for problem #3 part 2. 
+To run the small thread test code: `./thread`    
+
+
+- client executable is for problem #1 and #2 and basic testing.    
+- tclient is for readline_client.cpp, essentially for problem #3 part 1. Type some text and press Enter.     
+- mclient is for modified_client.cpp, a modified version of readline_client.cpp for problem #3 part 2. Type some text and press Enter.   
+- thread is for problem #2 part e. Once main exits normally, the thread terminates and nothing prints.     
+    
 
 ## Helpful commands 
 

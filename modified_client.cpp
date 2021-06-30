@@ -42,8 +42,12 @@ int main(int argc, char **argv)
 {
 	int		sockfd;
 
-	//if (argc != 3)
-		//err_quit("usage: tcpcli <hostname> <service>");
+	if (argc != 3)
+	{
+		std::cerr << ANSII_RED_START << "usage: tcpcli <hostname> <service>" << ANSII_END << std::endl;
+		return EXIT_FAILURE; 
+	}	
+		
 
 	sockfd = Tcp_connect(argv[1], argv[2]);
 
@@ -64,8 +68,11 @@ tcp_connect(const char *host, const char *serv)
 	hints.ai_socktype = SOCK_STREAM;
 
 	if ( (n = getaddrinfo(host, serv, &hints, &res)) != 0)
-		// err_quit("tcp_connect error for %s, %s: %s",
-		// 		 host, serv, gai_strerror(n));
+	{
+		printf("tcp_connect error for %s, %s: %s", host, serv, gai_strerror(n));
+		exit(1);
+	}
+
 	ressave = res;
 
 	do {
@@ -80,7 +87,10 @@ tcp_connect(const char *host, const char *serv)
 	} while ( (res = res->ai_next) != NULL);
 
 	if (res == NULL)	/* errno set from final connect() */
-		// err_sys("tcp_connect error for %s, %s", host, serv);
+	{
+		printf("tcp_connect error for %s, %s", host, serv);
+		exit(1);
+	}
 
 	freeaddrinfo(ressave);
 
@@ -153,8 +163,10 @@ writen(int fd, const void *vptr, size_t n)
 void Writen(int fd, void *ptr, size_t nbytes)
 {
 	if (writen(fd, ptr, nbytes) != nbytes)
+	{
         std::cerr << "Writen error" << std::endl; 
-		//err_sys("writen error");
+		exit(1);
+	}
 }
 
 static void readline_destructor(void *ptr)
@@ -164,9 +176,9 @@ static void readline_destructor(void *ptr)
 
 static void readline_once(void)
 {
-	std::cout << "rl_key before pthread_key_create call: " << rl_key << std::endl; 
+	std::cout << "rl_key before pthread_key_create call: " << &rl_key << std::endl; 
 	pthread_key_create(&rl_key, readline_destructor); 
-	std::cout << "rl_key after pthread_key_create call: " << rl_key << std::endl; 
+	std::cout << "rl_key after pthread_key_create call: " << &rl_key << std::endl; 
 
     pthread_key_create(&boris_key, readline_destructor);
 }
@@ -207,9 +219,9 @@ ssize_t readline(int fd, void *vptr, size_t maxlen)
 	if ( (tsd = (Rline *) pthread_getspecific(rl_key)) == NULL) {
 		tsd = (Rline *) Calloc(1, sizeof(Rline));		/* init to 0 */
 
-		std::cout << "rl_key before pthread_setspecific call: " << rl_key << std::endl; 
+		std::cout << "rl_key before pthread_setspecific call: " << &rl_key << std::endl; 
 		pthread_setspecific(rl_key, tsd);
-		std::cout << "rl_key after pthread_setspecific call: " << rl_key << std::endl; 
+		std::cout << "rl_key after pthread_setspecific call: " << &rl_key << std::endl; 
 
 
         std::string thread_specific_string = "Just some data";
@@ -242,8 +254,10 @@ ssize_t Readline(int fd, void *ptr, size_t maxlen)
 	ssize_t		n;
 
 	if ( (n = readline(fd, ptr, maxlen)) < 0)
+	{
         std::cerr << "readline error" << std::endl; 
-		//err_sys("readline error");
+		exit(1);
+	}
 	return(n);
 }
 
@@ -252,7 +266,9 @@ void * Calloc(size_t n, size_t size)
 	void	*ptr;
 
 	if ( (ptr = calloc(n, size)) == NULL)
+	{
         std::cerr << "Calloc error" << std::endl; 
-		//err_sys("calloc error");
+		exit(1);
+	}
 	return(ptr);
 }

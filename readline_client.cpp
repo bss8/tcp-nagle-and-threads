@@ -30,7 +30,7 @@ void * copyto(void *arg);
 
 static void readline_destructor(void *ptr);
 static void readline_once(void);
-static ssize_t my_read(Rline *tsd, int fd, char *ptr); 
+ ssize_t my_read(Rline *tsd, int fd, char *ptr); 
 ssize_t readline(int fd, void *vptr, size_t maxlen); 
 ssize_t Readline(int fd, void *ptr, size_t maxlen); 
 void * Calloc(size_t n, size_t size); 
@@ -40,8 +40,11 @@ int main(int argc, char **argv)
 {
 	int		sockfd;
 
-	//if (argc != 3)
-		//err_quit("usage: tcpcli <hostname> <service>");
+	if (argc != 3)
+	{
+		printf("usage: tcpcli <hostname> <service>");
+		return EXIT_FAILURE; 
+	}
 
 	sockfd = Tcp_connect(argv[1], argv[2]);
 
@@ -62,8 +65,10 @@ tcp_connect(const char *host, const char *serv)
 	hints.ai_socktype = SOCK_STREAM;
 
 	if ( (n = getaddrinfo(host, serv, &hints, &res)) != 0)
-		// err_quit("tcp_connect error for %s, %s: %s",
-		// 		 host, serv, gai_strerror(n));
+	{
+		printf("tcp_connect error for %s, %s: %s", host, serv, gai_strerror(n));
+		exit(1); 
+	}
 	ressave = res;
 
 	do {
@@ -78,7 +83,10 @@ tcp_connect(const char *host, const char *serv)
 	} while ( (res = res->ai_next) != NULL);
 
 	if (res == NULL)	/* errno set from final connect() */
-		// err_sys("tcp_connect error for %s, %s", host, serv);
+	{
+		printf("tcp_connect error for %s, %s", host, serv);
+		exit(1);
+	}
 
 	freeaddrinfo(ressave);
 
@@ -151,8 +159,12 @@ writen(int fd, const void *vptr, size_t n)
 void Writen(int fd, void *ptr, size_t nbytes)
 {
 	if (writen(fd, ptr, nbytes) != nbytes)
-        std::cerr << "Writen error" << std::endl; 
-		//err_sys("writen error");
+	{
+		std::cerr << "Writen error" << std::endl; 
+		exit(1); 
+	}
+        
+		
 }
 
 static void readline_destructor(void *ptr)
@@ -162,10 +174,10 @@ static void readline_destructor(void *ptr)
 
 static void readline_once(void)
 {
-	std::cout << "rl_key before pthread_key_create call: " << rl_key << std::endl; 
+	std::cout << "rl_key before pthread_key_create call: " << &rl_key << std::endl; 
 	pthread_key_create(&rl_key, readline_destructor);
 	std::cout << "rl_key: " << &rl_key << std::endl; 
-	std::cout << "rl_key after pthread_key_create call: " << rl_key << std::endl; 
+	std::cout << "rl_key after pthread_key_create call: " << &rl_key << std::endl; 
 }
 
 // typedef struct {
@@ -176,7 +188,8 @@ static void readline_once(void)
 /* end readline1 */
 
 /* include readline2 */
-static ssize_t my_read(Rline *tsd, int fd, char *ptr)
+// remove static here and in the signature up above to test without static declaration
+ ssize_t my_read(Rline *tsd, int fd, char *ptr)
 {
 	if (tsd->rl_cnt <= 0) {
 again:
@@ -200,12 +213,14 @@ ssize_t readline(int fd, void *vptr, size_t maxlen)
 	char	c, *ptr;
 	Rline	*tsd;
 
-	pthread_once(&rl_once, readline_once);
+	// To test out #4 part a, comment out the below line
+	//  
+	//pthread_once(&rl_once, readline_once);
 	if ( (tsd = (Rline *) pthread_getspecific(rl_key)) == NULL) {
 		tsd = (Rline *) Calloc(1, sizeof(Rline));		/* init to 0 */
-		std::cout << "rl_key before pthread_setspecific call: " << rl_key << std::endl; 
+		std::cout << "rl_key before pthread_setspecific call: " << &rl_key << std::endl; 
 		pthread_setspecific(rl_key, tsd);
-		std::cout << "rl_key after pthread_setspecific call: " << rl_key << std::endl; 
+		std::cout << "rl_key after pthread_setspecific call: " << &rl_key << std::endl; 
 	}
 
 	ptr = (char *) vptr;
@@ -231,8 +246,10 @@ ssize_t Readline(int fd, void *ptr, size_t maxlen)
 	ssize_t		n;
 
 	if ( (n = readline(fd, ptr, maxlen)) < 0)
+	{
         std::cerr << "readline error" << std::endl; 
-		//err_sys("readline error");
+		exit(1);
+	}
 	return(n);
 }
 
@@ -241,7 +258,9 @@ void * Calloc(size_t n, size_t size)
 	void	*ptr;
 
 	if ( (ptr = calloc(n, size)) == NULL)
+	{
         std::cerr << "Calloc error" << std::endl; 
-		//err_sys("calloc error");
+		exit(1);
+	}
 	return(ptr);
 }

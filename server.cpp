@@ -39,6 +39,12 @@ int main(int argc, char *argv[])
 
     int thread_ret = pthread_create(&thread_id, NULL, &thread_function_one, NULL);
 
+    /*
+    * some exit calls for testing below, disabled intentionally. 
+    * If we call pthread_exit(), the other threads launched by main continue. 
+    * If we call exit(), they terminate and do not continue. 
+    */ 
+
     // pthread_exit(NULL);
     // exit(0);
 
@@ -60,6 +66,7 @@ int main(int argc, char *argv[])
 
     for (;;)
     {
+        std::cout << ANSII_YELLOW_COUT << "Waiting for client connection...." << ANSII_END << std::endl; 
         len = addrlen;
         iptr = (int *)malloc(sizeof(int));
         //*iptr = accept(listenfd, cliaddr, &len);
@@ -73,15 +80,21 @@ int main(int argc, char *argv[])
 }
 
 /**
- * 
+ * A function to execute in a spearate thread. 
  * 
  */ 
 void *thread_function_one(void *arg)
 {
-    std::cout << "Thread Function :: Start" << std::endl;
+    std::cout << "Thread Function One :: Start" << std::endl;
+
+    /*
+    * some calls before we detach the thread for testing, intentionally disabled. 
+    * If we call exit or pthread exit here the main process continues but this thread does not. 
+    *
+    */
 
     // pthread_exit(NULL);
-    //exit(0);
+    //  exit(0);
 
     // Sleep for 2 seconds using the portable, standard C++ function sleep_for()
     // which takes a crono argument
@@ -90,7 +103,20 @@ void *thread_function_one(void *arg)
     for (int i = 0; i < 10; i++)
         std::cout << "non detached, non-main thread increment: " << i << std::endl;
 
-    std::cout << "Thread Function :: End" << std::endl;
+    pthread_detach(pthread_self());
+
+    /* 
+    * some calls after we detach the thread for testing, intentionally disabled. 
+    *
+    */ 
+
+    // pthread_exit(NULL);
+    // exit(0);
+
+    for (int j = 0; j < 10; j++)
+        std::cout << "detached, non-main thread increment: " << j << std::endl;
+
+    std::cout << "Thread Function One :: End" << std::endl;
     return NULL;
 }
 
@@ -100,20 +126,42 @@ void *thread_function_one(void *arg)
  */ 
 static void *doit(void *arg)
 {
+
+    std::cout << "doit thread function :: Start" << std::endl;
     int connfd;
+
+    /*
+    * some calls before we detach the thread for testing, intentionally disabled. 
+    * 
+    *
+    */
+
+    // exit(0);
+    // pthread_exit(NULL); 
 
     connfd = *((int *)arg);
     free(arg);
     look_sir_droids();
     pthread_detach(pthread_self());
+
+    /* 
+    * some calls after we detach the thread for testing, intentionally disabled. 
+    *
+    */ 
+
+    // exit(0);
+    // pthread_exit(NULL); 
+
     std::cout << "Chancelor Palpatine says: DO IT ANAKIN!" << std::endl;
     close(connfd); /* done with connected socket */
+    std::cout << "doit() function :: End" << std::endl;
     return (NULL);
 }
 
 /**
- * 
- * 
+ * disables Nagle's algorithm, although we really only need to worry about this on the sender (client end). 
+ * It is done here for practice and convenience. 
+ * if TCP_NODELAY is set (on), the algorithm is considered turned off.  
  */ 
 void disable_nagle_alg(int sockfd)
 {
@@ -125,8 +173,14 @@ void disable_nagle_alg(int sockfd)
 }
 
 /**
+ * perform the set-up for a TCP connection up to bniding the socket. 
+ * If the program is terminated early (after a bind), re-running the server
+ * may display an "ERROR on binding." This is expected, OS has a time limit and TIME_WAIT status. 
+ * Run the netstat --tcp --numeric | grep 5001 command to see details about the port. If it says TIME_WAIT
+ * then the time needs to elapse first before the port may be used again. 
  * 
- * 
+ * I could simply make the port dynamic (user chooses a new port each time) but this design is intentional to force this 
+ * bind error for practice. 
  */ 
 void setup_tcp_serv(int sockfd, sockaddr_in serv_addr)
 {
@@ -149,7 +203,7 @@ void setup_tcp_serv(int sockfd, sockaddr_in serv_addr)
     // This bind() call will bind  the socket to the current IP address on port
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        std::cerr << "ERROR on binding" << std::endl;
+        std::cerr << "ERROR on binding! Run the `netstat --tcp --numeric | grep 5001` command for details. " << std::endl;
         exit(1);
     }
 }
@@ -205,6 +259,11 @@ void accept_and_process(int sockfd, socklen_t clilen, sockaddr_in cli_addr)
     
 }
 
+/**
+ * Just a silly function to make things more fun
+ * Prints some Star Wars related ASCII art
+ * 
+ */ 
 void look_sir_droids()
 {
 std::cout << "                                     /~\\                           " << std::endl; 
